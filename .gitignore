@@ -4,3 +4,5 @@ vue-static
 data
 .idea
 *.zip
+*.xlsx
+pkg
