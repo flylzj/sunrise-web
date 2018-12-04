@@ -108,17 +108,17 @@ func UpdateGoodInfoWithInterval(){
 func GetNeedNotice()[]model.Good{
 	var goods []model.Good
 	model.Db.Find(&goods)
-	var needNoticGoods []model.Good
+	var needNoticeGoods []model.Good
 	for _, good := range goods{
 		var goodHistories []model.GoodHistory
 		model.Db.Limit(2).Where("abiid = ?", good.Abiid).Order("update_time desc").Find(&goodHistories)
 		if len(goodHistories) >= 2{
 			if goodHistories[0].StockNum != goodHistories[1].StockNum{
-				needNoticGoods = append(needNoticGoods, good)
+				needNoticeGoods = append(needNoticeGoods, good)
 			}
 		}
 	}
-	return needNoticGoods
+	return needNoticeGoods
 }
 
 func Notice(conf model.Conf){
