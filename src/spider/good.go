@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 	"util"
-)
+	)
 
 func GetAGood(abiid string) (model.Good, bool){
 	info := model.Good{Abiid:abiid}
 	token := GetToken()
-	if token == ""{
+	if token == "" || abiid == ""{
 		return info, false
 	}
 	GetGoodInfo(abiid, token, &info)
@@ -51,11 +51,13 @@ func GetGoodInfo(abiid string, token string, info *model.Good){
 }
 
 func UpdateGoodInfo(){
-	var goods []model.Good
-	model.Db.Find(&goods)
-	for _, good := range goods{
-		g, result := GetAGood(good.Abiid)
+	var goodsBeMonitored []model.GoodBeMonitored
+	model.Db.Find(&goodsBeMonitored)
+	for _, goodBeMonitored := range goodsBeMonitored{
+		g, result := GetAGood(goodBeMonitored.Abiid)
 		if result{
+			var good model.Good
+			model.Db.Find(&good, "abiid = ?", goodBeMonitored.Abiid)
 			good.MainName = g.MainName
 			good.Subtitle = g.Subtitle
 			good.BrandId = g.BrandId
@@ -80,6 +82,7 @@ func UpdateGoodInfo(){
 }
 
 func UpdateGoodInfoWithInterval(){
+	fmt.Println("第一次爬虫将在", time.Now().Add(time.Second * 60), "开始")
 	time.Sleep(time.Second * 60)
 	for{
 		fmt.Println("更新任务开始")
@@ -105,35 +108,45 @@ func UpdateGoodInfoWithInterval(){
 	}
 }
 
-func GetNeedNotice()[]model.Good{
+func GetNeedNotice()([]model.Good, []model.Good){
+	var goodsBeMonitor []model.GoodBeMonitored
 	var goods []model.Good
-	model.Db.Find(&goods)
+	model.Db.Find(&goodsBeMonitor)
 	var needNoticeGoods []model.Good
-	for _, good := range goods{
+	for _, good := range goodsBeMonitor{
+		var g model.Good
+		model.Db.Find(&g, "abiid = ?", good.Abiid)
 		var goodHistories []model.GoodHistory
 		model.Db.Limit(2).Where("abiid = ?", good.Abiid).Order("update_time desc").Find(&goodHistories)
-		if len(goodHistories) >= 2{
-			if goodHistories[0].StockNum != goodHistories[1].StockNum{
-				needNoticeGoods = append(needNoticeGoods, good)
-			}
+
+		if len(goodHistories) >= 2 && goodHistories[0].StockNum != goodHistories[1].StockNum{
+				needNoticeGoods = append(needNoticeGoods, g)
+		}else{
+			goods = append(goods, g)
 		}
 	}
-	return needNoticeGoods
+	fmt.Println(needNoticeGoods)
+	fmt.Println(goods)
+	return needNoticeGoods, goods
 }
 
 func Notice(conf model.Conf){
-	Goods := GetNeedNotice()
+	GoodNeedBeNotice, Goods := GetNeedNotice()
 	var message string
-	message += "以下商品发送了变化\n"
+	if len(GoodNeedBeNotice) == 0{
+		message = "没有商品变化"
+	}else {
+		message += "以下商品发送了变化\n"
+	}
 	if len(Goods) == 0{
 		fmt.Println("商品库存没有变化，等待下一次更新")
 	}else {
-		for _, good := range Goods{
+		for _, good := range GoodNeedBeNotice{
 			message += good.Abiid + "\t" +good.MainName + "\n"
 		}
 		util.CreatePath("email")
 		filename := path.Join("data", "email", "output.xlsx")
-		filename = util.DomToExcel(Goods, filename)
+		filename = util.DomToExcelWithHightLight(GoodNeedBeNotice, Goods, filename)
 		if conf.Sender != "" || conf.SenderPwd != "" || conf.Receiver != "" {
 			sendEmail(conf.Sender, conf.SenderPwd, conf.Receiver, message, filename)
 		}else {

@@ -207,5 +207,5 @@ func main(){
 	router.POST("/api/good", addGood)
 	router.DELETE("/api/good", deleteGood)
 	router.POST("/api/good/upload", getExcelFile)
-	router.Run()
+	router.Run(":8080")
 }
