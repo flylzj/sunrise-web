@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"model"
 	"net/smtp"
 	"strings"
 	"time"
@@ -113,22 +112,25 @@ func (mail SendMail) writeFile(buffer *bytes.Buffer, fileName string) {
 	}
 }
 
-func SendEmail(conf model.Conf) {
-
+func sendEmail(sender, pwd, receiver, msg ,filename string){
 	var mail Mail
-	mail = &SendMail{user: conf.Sender, password: conf.SenderPwd, host: "smtp.qq.com", port: "25"}
-	message := Message{from: conf.Sender,
-		to: []string{conf.Receiver},
+	mail = &SendMail{user: sender, password: pwd, host: "smtp.qq.com", port: "25"}
+	var atta Attachment
+	if filename != ""{
+		atta = Attachment{
+			name:        filename,
+			contentType: "application/octet-stream",
+			withFile:    true,
+		}
+	}
+	message := Message{from: sender,
+		to: []string{receiver},
 		cc: []string{},
 		bcc: []string{},
 		subject: "库存信息",
-		body: "",
+		body: msg,
 		contentType: "text/plain;charset=utf-8",
-		attachment: Attachment{
-			name:        "output.xlsx",
-			contentType: "application/octet-stream",
-			withFile:    true,
-		},
+		attachment: atta,
 	}
 	err := mail.Send(message)
 	if err != nil{
@@ -137,4 +139,5 @@ func SendEmail(conf model.Conf) {
 		return
 	}
 	fmt.Println("邮件发送成功")
+
 }

@@ -1,0 +1,5 @@
+*.exe
+vue-static
+*.db
+data
+.idea

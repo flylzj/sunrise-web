@@ -1,8 +1,10 @@
 package resource
 
 import (
+	"fmt"
 	"model"
 	"spider"
+	"util"
 )
 
 func GetBeMonitoredGoods()[]model.Good{
@@ -44,4 +46,24 @@ func AddGood(abiid string)string{
 	}else {
 		return "添加失败"
 	}
+}
+
+func DeleteAGood(abiid string)string{
+	goodBeMonitored := SearchGoodBeMonitored(abiid)
+	if goodBeMonitored.Abiid == ""{
+		return "不存在"
+	}
+	model.Db.Delete(&goodBeMonitored)
+	return "ok"
+}
+
+func AddGoodInBatches(filename string)(results [][2]string){
+	//var wg sync.WaitGroup
+	abiids := util.ReadXlsx(filename)
+	for _, abiid := range abiids{
+		result := AddGood(abiid)
+		fmt.Println(result)
+		results = append(results, [2]string{abiid, result})
+	}
+	return
 }

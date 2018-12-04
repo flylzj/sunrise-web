@@ -7,9 +7,13 @@ import (
 	"io/ioutil"
 	"model"
 	"net/http"
+	"path"
 	"resource"
 	"spider"
+	"strconv"
 	"strings"
+	"time"
+	"util"
 )
 
 func updateTimeConf(ctx *gin.Context){
@@ -90,11 +94,56 @@ func addGood(ctx *gin.Context){
 	})
 }
 
+func deleteGood(ctx *gin.Context){
+	good := model.GoodBeMonitored{}
+	data, _ := ioutil.ReadAll(ctx.Request.Body)
+	json.Unmarshal(data, &good)
+	result := resource.DeleteAGood(good.Abiid)
+	var (
+		code int
+	)
+	if result == "ok"{
+		code = 0
+	}else {
+		code = 1
+	}
+	ctx.JSON(200, gin.H{
+		"message": result,
+		"code": code,
+	})
+}
+
 func getBeMonitoredGoods(ctx *gin.Context){
 	ctx.JSON(200, gin.H{
 		"message": "ok",
 		"code": 0,
 		"data": resource.GetBeMonitoredGoods(),
+	})
+}
+
+func getExcelFile(ctx *gin.Context){
+	file, err := ctx.FormFile("file")
+	if err != nil{
+		ctx.JSON(200, gin.H{
+			"message": "bad request",
+			"code": 1,
+		})
+	}
+	result := util.FilterExcel(file.Filename)
+	if result != "ok"{
+		ctx.JSON(200, gin.H{
+			"message": result,
+			"code": 1,
+		})
+	}
+	util.CreatePath("excel")
+	uploadFile :=  path.Join("data", "excel", strconv.Itoa(int(time.Now().Unix())) + ".xlsx")
+	ctx.SaveUploadedFile(file,uploadFile)
+	results := resource.AddGoodInBatches(uploadFile)
+	ctx.JSON(200, gin.H{
+		"message": "ok",
+		"data": results,
+		"code": 0,
 	})
 }
 
@@ -134,8 +183,16 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
+func StaticRouter(){
+	http.Handle("/", http.FileServer(http.Dir("vue-static")))
+	http.ListenAndServe(":8081",nil)
+}
+
 func main(){
 	go spider.MainSpider()
+	go StaticRouter()
+	fmt.Println("静态资源加载完成")
+	fmt.Println("若系统没有自动打开，请手动在浏览器输入http://127.0.0.1:8081")
 	router := gin.Default()
 	router.Use(Cors())
 	router.GET("/api/time_interval", getTimeConf)
@@ -145,5 +202,7 @@ func main(){
 	router.GET("/api/history/:abiid", getGoodHistory)
 	router.GET("/api/good", getBeMonitoredGoods)
 	router.POST("/api/good", addGood)
+	router.DELETE("/api/good", deleteGood)
+	router.POST("/api/good/upload", getExcelFile)
 	router.Run()
 }

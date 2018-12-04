@@ -3,8 +3,10 @@ package spider
 import (
 	"fmt"
 	"model"
+	"path"
 	"strconv"
 	"time"
+	"util"
 )
 
 func GetAGood(abiid string) (model.Good, bool){
@@ -71,9 +73,10 @@ func UpdateGoodInfo(){
 }
 
 func UpdateGoodInfoWithInterval(){
+	time.Sleep(time.Second * 60)
 	for{
 		fmt.Println("更新任务开始")
-		conf := &model.Conf{}
+		conf := model.Conf{}
 		model.Db.First(&conf)
 		hour := conf.IntervalHour
 		minute := conf.IntervalMinute
@@ -83,10 +86,13 @@ func UpdateGoodInfoWithInterval(){
 		}
 		interval := time.Hour * time.Duration(hour) + time.Minute * time.Duration(minute)
 		UpdateGoodInfo()
+		var goods []model.Good
+		model.Db.Find(&goods)
+		util.CreatePath("spider_data")
+		util.DomToExcel(goods, path.Join("data", "spider_data","output.xlsx"))
 		fmt.Println("更新任务完成， 下次更新将在", time.Now().Add(interval))
-
 		fmt.Println("提醒任务开始")
-		Notice()
+		Notice(conf)
 		fmt.Println("提醒任务完成")
 		time.Sleep(interval)
 	}
@@ -108,13 +114,21 @@ func GetNeedNotice()[]model.Good{
 	return needNoticGoods
 }
 
-func Notice(){
+func Notice(conf model.Conf){
 	Goods := GetNeedNotice()
+	var message string
+	message += "以下商品发送了变化\n"
 	if len(Goods) == 0{
 		fmt.Println("商品库存没有变化，等待下一次更新")
 	}else {
 		for _, good := range Goods{
-
+			message += good.Abiid + "\t" +good.MainName + "\n"
+		}
+		filename := util.DomToExcel(Goods, "output.xlsx")
+		if conf.Sender != "" || conf.SenderPwd != "" || conf.Receiver != "" {
+			sendEmail(conf.Sender, conf.SenderPwd, conf.Receiver, message, filename)
+		}else {
+			fmt.Println("未配置邮箱或邮箱错误")
 		}
 	}
 }
