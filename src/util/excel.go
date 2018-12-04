@@ -13,11 +13,15 @@ import (
 func ReadXlsx(filename string) (abiids []string){
 	xlFile, err := xlsx.OpenFile(filename)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
 	sheet := xlFile.Sheets[0]
 	for _, row := range sheet.Rows{
 		abiid := row.Cells[0]
+		_, err := strconv.Atoi(abiid.Value)
+		if err != nil{
+			continue
+		}
 		abiids = append(abiids, abiid.Value)
 	}
 	return

@@ -3,3 +3,4 @@ vue-static
 *.db
 data
 .idea
+*.zip

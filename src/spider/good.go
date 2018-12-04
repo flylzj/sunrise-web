@@ -18,6 +18,7 @@ func GetAGood(abiid string) (model.Good, bool){
 	GetGoodInfo(abiid, token, &info)
 	GetGoodPrice(abiid, token, &info)
 	if info.Abiid != "0"{
+		info.LastUpdateTime = int(time.Now().Unix())
 		return info, true
 	}else {
 		return info, false
@@ -55,6 +56,12 @@ func UpdateGoodInfo(){
 	for _, good := range goods{
 		g, result := GetAGood(good.Abiid)
 		if result{
+			good.MainName = g.MainName
+			good.Subtitle = g.Subtitle
+			good.BrandId = g.BrandId
+			good.BrandName = g.BrandName
+			good.CategoryId = g.CategoryId
+			good.CategoryName = g.CategoryName
 			good.Price = g.Price
 			good.RealPrice = g.RealPrice
 			good.Stock = g.Stock
@@ -124,7 +131,9 @@ func Notice(conf model.Conf){
 		for _, good := range Goods{
 			message += good.Abiid + "\t" +good.MainName + "\n"
 		}
-		filename := util.DomToExcel(Goods, "output.xlsx")
+		util.CreatePath("email")
+		filename := path.Join("data", "email", "output.xlsx")
+		filename = util.DomToExcel(Goods, filename)
 		if conf.Sender != "" || conf.SenderPwd != "" || conf.Receiver != "" {
 			sendEmail(conf.Sender, conf.SenderPwd, conf.Receiver, message, filename)
 		}else {

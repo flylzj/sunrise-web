@@ -19,6 +19,7 @@ import (
 func updateTimeConf(ctx *gin.Context){
 	conf := model.Conf{}
 	data, _ := ioutil.ReadAll(ctx.Request.Body)
+	fmt.Println(string(data))
 	json.Unmarshal(data, &conf)
 	resource.SetTimeConf(conf.IntervalHour, conf.IntervalMinute)
 	ctx.JSON(200, gin.H{
@@ -128,23 +129,25 @@ func getExcelFile(ctx *gin.Context){
 			"message": "bad request",
 			"code": 1,
 		})
+	}else {
+		result := util.FilterExcel(file.Filename)
+		if result != "ok"{
+			ctx.JSON(200, gin.H{
+				"message": result,
+				"code": 1,
+			})
+		}else {
+			util.CreatePath("excel")
+			uploadFile :=  path.Join("data", "excel", strconv.Itoa(int(time.Now().Unix())) + ".xlsx")
+			ctx.SaveUploadedFile(file,uploadFile)
+			results := resource.AddGoodInBatches(uploadFile)
+			ctx.JSON(200, gin.H{
+				"message": "ok",
+				"data": results,
+				"code": 0,
+			})
+		}
 	}
-	result := util.FilterExcel(file.Filename)
-	if result != "ok"{
-		ctx.JSON(200, gin.H{
-			"message": result,
-			"code": 1,
-		})
-	}
-	util.CreatePath("excel")
-	uploadFile :=  path.Join("data", "excel", strconv.Itoa(int(time.Now().Unix())) + ".xlsx")
-	ctx.SaveUploadedFile(file,uploadFile)
-	results := resource.AddGoodInBatches(uploadFile)
-	ctx.JSON(200, gin.H{
-		"message": "ok",
-		"data": results,
-		"code": 0,
-	})
 }
 
 func Cors() gin.HandlerFunc {
