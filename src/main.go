@@ -191,13 +191,9 @@ func StaticRouter(){
 	http.ListenAndServe(":8081",nil)
 }
 
-func main(){
-	go spider.MainSpider()
-	go StaticRouter()
-	fmt.Println("静态资源加载完成")
-	fmt.Println("若系统没有自动打开，请手动在浏览器输入http://127.0.0.1:8081")
+func StartRearEndRouter(){
 	router := gin.Default()
-	router.Use(Cors())
+	router.Use(Cors()) // 跨域
 	router.GET("/api/time_interval", getTimeConf)
 	router.POST("/api/time_interval", updateTimeConf)
 	router.GET("/api/email", getEmailConf)
@@ -208,4 +204,12 @@ func main(){
 	router.DELETE("/api/good", deleteGood)
 	router.POST("/api/good/upload", getExcelFile)
 	router.Run(":8080")
+}
+
+func main(){
+	go spider.MainSpider()
+	go StaticRouter()
+	fmt.Println("静态资源加载完成")
+	fmt.Println("若系统没有自动打开，请手动在浏览器输入http://127.0.0.1:8081")
+	StartRearEndRouter()
 }

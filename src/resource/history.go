@@ -1,9 +1,13 @@
 package resource
 
-import "model"
+import (
+	"fmt"
+	"model"
+)
 
 func GetGoodHistory(abiid string)[]model.GoodHistory{
 	var history []model.GoodHistory
-	model.Db.Order("update_time").Limit(20).Find(&history, "abiid = ?", abiid)
+	model.Db.Group("stock_num").Order("update_time desc").Limit(20).Find(&history, "abiid = ?", abiid)
+	fmt.Println(history)
 	return history
 }

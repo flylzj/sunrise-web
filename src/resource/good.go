@@ -12,7 +12,11 @@ func GetBeMonitoredGoods()[]model.Good{
 	var goods []model.Good
 	model.Db.Find(&goodsBeMonitor)
 	for _, good := range goodsBeMonitor{
-		goods = append(goods, SearchGood(good.Abiid))
+		g := SearchGood(good.Abiid)
+		if g.IntStock < 0{
+			g.IntStock = 0
+		}
+		goods = append(goods, g)
 	}
 	return goods
 }

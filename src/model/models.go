@@ -91,3 +91,8 @@ func (Conf) TableName()string{
 }
 
 
+type GoodBeNoticed struct {
+	Good	Good
+	LastStock	int
+}
+

@@ -57,7 +57,7 @@ func DomToExcel(goods []model.Good, filename string)string{
 	return filename
 }
 
-func DomToExcelWithHightLight(goodsNeedBeNoticed, goods []model.Good, filename string)string{
+func DomToExcelWithHightLight(goodsNeedBeNoticed []model.GoodBeNoticed, goods []model.Good, filename string)string{
 	os.Remove(filename)
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet("库存变化表")
@@ -70,7 +70,8 @@ func DomToExcelWithHightLight(goodsNeedBeNoticed, goods []model.Good, filename s
 	row.AddCell().Value = "mainname"
 	row.AddCell().Value = "price"
 	row.AddCell().Value = "stock"
-	row.AddCell().Value = "stock_num"
+	row.AddCell().Value = "before"
+	row.AddCell().Value = "now"
 
 	style := xlsx.NewStyle()
 
@@ -88,21 +89,25 @@ func DomToExcelWithHightLight(goodsNeedBeNoticed, goods []model.Good, filename s
 
 	for _, good := range goodsNeedBeNoticed{
 		row = sheet.AddRow()
+		row.SetHeight(20)
 		cell1 := row.AddCell()
-		cell1.Value = good.Abiid
+		cell1.Value = good.Good.Abiid
 		cell2 := row.AddCell()
-		cell2.Value = good.MainName
+		cell2.Value = good.Good.MainName
 		cell3 := row.AddCell()
-		cell3.Value = strconv.Itoa(good.Price)
+		cell3.Value = strconv.Itoa(good.Good.Price)
 		cell4 := row.AddCell()
-		cell4.Value = good.Stock
+		cell4.Value = good.Good.Stock
 		cell5 := row.AddCell()
-		cell5.Value = strconv.Itoa(good.IntStock)
+		cell5.Value = strconv.Itoa(good.LastStock)
+		cell6 := row.AddCell()
+		cell6.Value = strconv.Itoa(good.Good.IntStock)
 		cell1.SetStyle(style)
 		cell2.SetStyle(style)
 		cell3.SetStyle(style)
 		cell4.SetStyle(style)
 		cell5.SetStyle(style)
+		cell6.SetStyle(style)
 		//row.AddCell().Value = good.Abiid
 		//row.AddCell().Value = good.MainName
 		//row.AddCell().Value = strconv.Itoa(good.Price)
@@ -121,6 +126,8 @@ func DomToExcelWithHightLight(goodsNeedBeNoticed, goods []model.Good, filename s
 		cell4.Value = good.Stock
 		cell5 := row.AddCell()
 		cell5.Value = strconv.Itoa(good.IntStock)
+		cell6 := row.AddCell()
+		cell6.Value = strconv.Itoa(good.IntStock)
 		//row.AddCell().Value = good.Abiid
 		//row.AddCell().Value = good.MainName
 		//row.AddCell().Value = strconv.Itoa(good.Price)

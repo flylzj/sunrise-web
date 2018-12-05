@@ -108,45 +108,44 @@ func UpdateGoodInfoWithInterval(){
 	}
 }
 
-func GetNeedNotice()([]model.Good, []model.Good){
+func GetNeedNotice()([]model.GoodBeNoticed, []model.Good){
 	var goodsBeMonitor []model.GoodBeMonitored
+	var goodsNeedBeNoticed []model.GoodBeNoticed
 	var goods []model.Good
 	model.Db.Find(&goodsBeMonitor)
-	var needNoticeGoods []model.Good
+	//var needNoticeGoods []model.Good
 	for _, good := range goodsBeMonitor{
 		var g model.Good
 		model.Db.Find(&g, "abiid = ?", good.Abiid)
 		var goodHistories []model.GoodHistory
 		model.Db.Limit(2).Where("abiid = ?", good.Abiid).Order("update_time desc").Find(&goodHistories)
 
-		if len(goodHistories) >= 2 && goodHistories[0].StockNum != goodHistories[1].StockNum{
-				needNoticeGoods = append(needNoticeGoods, g)
+		if len(goodHistories) >= 2  && goodHistories[0].StockNum != goodHistories[1].StockNum && (goodHistories[0].StockNum >=0 || goodHistories[1].StockNum >= 0){
+			goodsNeedBeNoticed = append(goodsNeedBeNoticed, model.GoodBeNoticed{Good:g, LastStock:goodHistories[1].StockNum})
+			//needNoticeGoods = append(needNoticeGoods, g)
 		}else{
+			if g.IntStock < 0{
+				g.IntStock = 0
+			}
 			goods = append(goods, g)
 		}
 	}
-	fmt.Println(needNoticeGoods)
-	fmt.Println(goods)
-	return needNoticeGoods, goods
+	return goodsNeedBeNoticed, goods
 }
 
 func Notice(conf model.Conf){
-	GoodNeedBeNotice, Goods := GetNeedNotice()
+	GoodsNeedBeNotice, Goods := GetNeedNotice()
 	var message string
-	if len(GoodNeedBeNotice) == 0{
-		message = "没有商品变化"
-	}else {
-		message += "以下商品发送了变化\n"
-	}
-	if len(Goods) == 0{
+	if len(GoodsNeedBeNotice) == 0{
 		fmt.Println("商品库存没有变化，等待下一次更新")
 	}else {
-		for _, good := range GoodNeedBeNotice{
-			message += good.Abiid + "\t" +good.MainName + "\n"
+		message = "以下商品发送了变化\n"
+		for _, good := range GoodsNeedBeNotice{
+			message += good.Good.Abiid + "\t" +good.Good.MainName + ":" + strconv.Itoa(good.LastStock) + "->" + strconv.Itoa(good.Good.IntStock) + "\n"
 		}
 		util.CreatePath("email")
 		filename := path.Join("data", "email", "output.xlsx")
-		filename = util.DomToExcelWithHightLight(GoodNeedBeNotice, Goods, filename)
+		filename = util.DomToExcelWithHightLight(GoodsNeedBeNotice, Goods, filename)
 		if conf.Sender != "" || conf.SenderPwd != "" || conf.Receiver != "" {
 			sendEmail(conf.Sender, conf.SenderPwd, conf.Receiver, message, filename)
 		}else {
