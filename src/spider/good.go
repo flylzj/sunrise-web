@@ -120,7 +120,7 @@ func GetNeedNotice()([]model.GoodBeNoticed, []model.Good){
 		var goodHistories []model.GoodHistory
 		model.Db.Limit(2).Where("abiid = ?", good.Abiid).Order("update_time desc").Find(&goodHistories)
 
-		if len(goodHistories) >= 2  && goodHistories[0].StockNum != goodHistories[1].StockNum && (goodHistories[0].StockNum >=0 || goodHistories[1].StockNum >= 0){
+		if len(goodHistories) >= 2  && goodHistories[0].StockNum != goodHistories[1].StockNum && (goodHistories[0].StockNum >0 || goodHistories[1].StockNum > 0){
 			goodsNeedBeNoticed = append(goodsNeedBeNoticed, model.GoodBeNoticed{Good:g, LastStock:goodHistories[1].StockNum})
 			//needNoticeGoods = append(needNoticeGoods, g)
 		}else{
@@ -141,7 +141,7 @@ func Notice(conf model.Conf){
 	}else {
 		message = "以下商品发送了变化\n"
 		for _, good := range GoodsNeedBeNotice{
-			message += good.Good.Abiid + "\t" +good.Good.MainName + ":" + strconv.Itoa(good.LastStock) + "->" + strconv.Itoa(good.Good.IntStock) + "\n"
+			message += good.Good.Abiid + "\t" +good.Good.MainName + ":" + strconv.Itoa(good.LastStock) + " -> " + strconv.Itoa(good.Good.IntStock) + "\n"
 		}
 		util.CreatePath("email")
 		filename := path.Join("data", "email", "output.xlsx")
