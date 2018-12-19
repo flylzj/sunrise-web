@@ -3,9 +3,8 @@ package spider
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
-	"log"
+	"model"
 	"net/smtp"
 	"strings"
 	"time"
@@ -74,7 +73,7 @@ func (mail SendMail) Send(message Message) error {
 		buffer.WriteString(attachment)
 		defer func() {
 			if err := recover(); err != nil {
-				log.Fatalln(err)
+				model.Error.Println("发送邮件失败", err)
 			}
 		}()
 		mail.writeFile(buffer, message.attachment.name)
@@ -134,10 +133,9 @@ func sendEmail(sender, pwd, receiver, msg ,filename string){
 	}
 	err := mail.Send(message)
 	if err != nil{
-		fmt.Println("邮件发送失败")
-		fmt.Println(err)
+		model.Error.Println("邮件发送失败", err.Error())
 		return
 	}
-	fmt.Println("邮件发送成功")
+	model.Info.Println("邮件发送成功")
 
 }

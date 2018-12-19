@@ -11,7 +11,8 @@
     "code": 0,
     "data": {
         "hour": 8,
-        "minute": 1
+        "minute": 1,
+        "count": 10
     },
     "message": "ok"
 }
@@ -26,7 +27,8 @@ need
 ```json
 {
     "intervalHour": 8,
-    "intervalminute": 1
+    "intervalminute": 1,
+    "goodCountInterval": 10
 }
 ```
 

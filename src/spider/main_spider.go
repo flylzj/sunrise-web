@@ -1,8 +1,8 @@
 package spider
 
-import "fmt"
+import "model"
 
 func MainSpider(){
 	go UpdateGoodInfoWithInterval()
-	fmt.Println("爬虫模块加载完成")
+	model.Info.Println("爬虫模块加载完成")
 }

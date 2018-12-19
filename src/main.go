@@ -19,13 +19,19 @@ import (
 func updateTimeConf(ctx *gin.Context){
 	conf := model.Conf{}
 	data, _ := ioutil.ReadAll(ctx.Request.Body)
-	fmt.Println(string(data))
 	json.Unmarshal(data, &conf)
-	resource.SetTimeConf(conf.IntervalHour, conf.IntervalMinute)
-	ctx.JSON(200, gin.H{
-		"message": "ok",
-		"code": 0,
-	})
+	result := resource.SetTimeConf(conf.IntervalHour, conf.IntervalMinute, conf.GoodCountInterval)
+	if result{
+		ctx.JSON(200, gin.H{
+			"message": "ok",
+			"code": 0,
+		})
+	}else {
+		ctx.JSON(200, gin.H{
+			"message": "分钟或物品间隔不能为0",
+			"code": 1,
+		})
+	}
 }
 
 func updateEmailConf(ctx *gin.Context){
@@ -40,13 +46,14 @@ func updateEmailConf(ctx *gin.Context){
 }
 
 func getTimeConf(ctx *gin.Context){
-	hour, minute := resource.GetTimeConf()
+	hour, minute, count := resource.GetTimeConf()
 	ctx.JSON(200, gin.H{
 		"message": "ok",
 		"code": 0,
 		"data": gin.H{
 			"hour": hour,
 			"minute": minute,
+			"count": count,
 		},
 	})
 }
@@ -209,7 +216,7 @@ func StartRearEndRouter(){
 func main(){
 	go spider.MainSpider()
 	go StaticRouter()
-	fmt.Println("静态资源加载完成")
-	fmt.Println("若系统没有自动打开，请手动在浏览器输入http://127.0.0.1:8081")
+	model.Info.Println("静态资源加载完成")
+	model.Info.Println("若系统没有自动打开，请手动在浏览器输入http://127.0.0.1:8081")
 	StartRearEndRouter()
 }

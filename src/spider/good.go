@@ -2,6 +2,7 @@ package spider
 
 import (
 	"fmt"
+	"math"
 	"model"
 	"path"
 	"strconv"
@@ -76,58 +77,67 @@ func UpdateGoodInfo(){
 				StockNum:g.IntStock,
 				UpdateTime:int(time.Now().Unix()),
 			})
-			fmt.Println("更新", good.Abiid, "成功")
+			model.Info.Println("更新", good.Abiid, "成功")
 		}
 	}
 }
 
 func UpdateGoodInfoWithInterval(){
-	fmt.Println("第一次爬虫将在", time.Now().Add(time.Second * 60), "开始")
+	model.Info.Println("第一次爬虫将在", time.Now().Add(time.Second * 60), "开始")
 	time.Sleep(time.Second * 60)
 	for{
-		fmt.Println("更新任务开始")
+		model.Info.Println("更新任务开始")
 		conf := model.Conf{}
 		model.Db.First(&conf)
 		hour := conf.IntervalHour
 		minute := conf.IntervalMinute
+		second := 0
 		if hour == 0 && minute == 0{
 			hour = 0
-			minute = 2
+			minute = 0
+			second = 5
 		}
-		interval := time.Hour * time.Duration(hour) + time.Minute * time.Duration(minute)
+		interval := time.Hour * time.Duration(hour) + time.Minute * time.Duration(minute) + time.Second * time.Duration(second)
 		UpdateGoodInfo()
 		var goods []model.Good
 		model.Db.Find(&goods)
 		util.CreatePath("spider_data")
 		util.DomToExcel(goods, path.Join("data", "spider_data","output.xlsx"))
-		fmt.Println("更新任务完成， 下次更新将在", time.Now().Add(interval))
-		fmt.Println("提醒任务开始")
+		model.Info.Println("更新任务完成， 下次更新将在", time.Now().Add(interval))
+		model.Info.Println("提醒任务开始")
 		Notice(conf)
-		fmt.Println("提醒任务完成")
+		model.Info.Println("提醒任务完成")
 		time.Sleep(interval)
 	}
 }
 
-func GetNeedNotice()([]model.GoodBeNoticed, []model.Good){
+func GetNeedNotice()([]model.GoodBeNoticed, []model.GoodBeNoticed){
 	var goodsBeMonitor []model.GoodBeMonitored
 	var goodsNeedBeNoticed []model.GoodBeNoticed
-	var goods []model.Good
+	var goods []model.GoodBeNoticed
 	model.Db.Find(&goodsBeMonitor)
 	//var needNoticeGoods []model.Good
+	conf := model.Conf{}
+	model.Db.First(&conf)
+	var goodCountInterval float64
+	if conf.GoodCountInterval == 0{
+		goodCountInterval = 5
+	}else {
+		goodCountInterval = float64(conf.GoodCountInterval)
+	}
 	for _, good := range goodsBeMonitor{
 		var g model.Good
 		model.Db.Find(&g, "abiid = ?", good.Abiid)
 		var goodHistories []model.GoodHistory
 		model.Db.Limit(2).Where("abiid = ?", good.Abiid).Order("update_time desc").Find(&goodHistories)
-
-		if len(goodHistories) >= 2  && goodHistories[0].StockNum != goodHistories[1].StockNum && (goodHistories[0].StockNum >0 || goodHistories[1].StockNum > 0){
+		if len(goodHistories) >= 2  && goodHistories[0].StockNum != goodHistories[1].StockNum && (goodHistories[0].StockNum > 0 || goodHistories[1].StockNum > 0) && math.Abs(float64(goodHistories[1].StockNum - goodHistories[0].StockNum)) >= goodCountInterval{
 			goodsNeedBeNoticed = append(goodsNeedBeNoticed, model.GoodBeNoticed{Good:g, LastStock:goodHistories[1].StockNum})
 			//needNoticeGoods = append(needNoticeGoods, g)
 		}else{
 			if g.IntStock < 0{
 				g.IntStock = 0
 			}
-			goods = append(goods, g)
+			goods = append(goods, model.GoodBeNoticed{Good:g, LastStock:goodHistories[1].StockNum})
 		}
 	}
 	return goodsNeedBeNoticed, goods
@@ -137,7 +147,7 @@ func Notice(conf model.Conf){
 	GoodsNeedBeNotice, Goods := GetNeedNotice()
 	var message string
 	if len(GoodsNeedBeNotice) == 0{
-		fmt.Println("商品库存没有变化，等待下一次更新")
+		model.Info.Println("商品库存没有变化，等待下一次更新")
 	}else {
 		message = "以下商品发送了变化\n"
 		for _, good := range GoodsNeedBeNotice{
@@ -149,7 +159,7 @@ func Notice(conf model.Conf){
 		if conf.Sender != "" || conf.SenderPwd != "" || conf.Receiver != "" {
 			sendEmail(conf.Sender, conf.SenderPwd, conf.Receiver, message, filename)
 		}else {
-			fmt.Println("未配置邮箱或邮箱错误")
+			model.Info.Println("未配置邮箱或邮箱错误")
 		}
 	}
 }

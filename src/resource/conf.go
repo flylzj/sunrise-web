@@ -1,16 +1,17 @@
 package resource
 
 import (
-	"fmt"
 	"model"
 )
 
-func SetTimeConf(hour, minute int){
+func SetTimeConf(hour, minute, goodCountInterval int)bool{
 	conf := model.Conf{}
 	model.Db.First(&conf)
 	conf.IntervalHour = hour
 	conf.IntervalMinute = minute
+	conf.GoodCountInterval = goodCountInterval
 	model.Db.Save(&conf)
+	return true
 }
 
 func SetEmailConf(sender, sender_pwd, receiver string){
@@ -22,11 +23,10 @@ func SetEmailConf(sender, sender_pwd, receiver string){
 	model.Db.Save(&conf)
 }
 
-func GetTimeConf()(int, int){
+func GetTimeConf()(int, int, int){
 	conf := model.Conf{}
 	model.Db.First(&conf)
-	fmt.Println(conf)
-	return conf.IntervalHour, conf.IntervalMinute
+	return conf.IntervalHour, conf.IntervalMinute, conf.GoodCountInterval
 }
 
 func GetEmailConf()(string, string, string){

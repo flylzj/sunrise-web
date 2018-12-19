@@ -8,6 +8,7 @@ import (
 	"github.com/bitly/go-simplejson"
 	"io/ioutil"
 	"math/rand"
+	"model"
 	"net/http"
 	"sort"
 	"strings"
@@ -25,22 +26,19 @@ func GetJsonData(url string, method string, headers map[string]string, body stri
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
-		fmt.Println("http error")
-		fmt.Println(err)
+		model.Error.Println("http error", err.Error())
 		return nil, err
 	}
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println("io error")
-		fmt.Println(err)
+		model.Error.Println("io error", err.Error())
 		return nil, err
 	}
 
 	jsonDate, err := simplejson.NewJson(responseBody)
 	if err != nil {
-		fmt.Println("json error")
-		fmt.Println(err)
+		model.Error.Println("json error", err.Error())
 		return nil, err
 	}
 	return jsonDate, nil

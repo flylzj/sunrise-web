@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"fmt"
 	"model"
 	"spider"
 	"util"
@@ -66,7 +65,7 @@ func AddGoodInBatches(filename string)(results [][2]string){
 	abiids := util.ReadXlsx(filename)
 	for _, abiid := range abiids{
 		result := AddAbiid(abiid)
-		fmt.Println(result)
+		model.Info.Println(result)
 		results = append(results, [2]string{abiid, result})
 	}
 	return

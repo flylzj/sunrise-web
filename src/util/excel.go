@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"github.com/tealeg/xlsx"
 	"model"
 	"os"
@@ -32,7 +31,7 @@ func DomToExcel(goods []model.Good, filename string)string{
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet("库存变化表")
 	if err != nil{
-		fmt.Println(err)
+		model.Error.Println("打开excel失败", err.Error())
 		return ""
 	}
 	row := sheet.AddRow()
@@ -51,20 +50,30 @@ func DomToExcel(goods []model.Good, filename string)string{
 	}
 	err = file.Save(filename)
 	if err != nil {
-		fmt.Println(err)
+		model.Error.Println("保存excel失败", err.Error())
 		return ""
 	}
 	return filename
 }
 
-func DomToExcelWithHightLight(goodsNeedBeNoticed []model.GoodBeNoticed, goods []model.Good, filename string)string{
-	os.Remove(filename)
+func DomToExcelWithHightLight(goodsNeedBeNoticed []model.GoodBeNoticed, goods []model.GoodBeNoticed, filename string)string{
+	err := os.Remove(filename)
+	if err != nil{
+		model.Error.Println("删除excel失败", err.Error())
+	}
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet("库存变化表")
 	if err != nil{
-		fmt.Println(err)
+		model.Error.Println("打开excel失败", err.Error())
 		return ""
 	}
+	sheet.SetColWidth(0, 0, 10)
+	sheet.SetColWidth(1, 1, 40)
+	sheet.SetColWidth(2, 2, 10)
+	sheet.SetColWidth(3, 3, 10)
+	sheet.SetColWidth(4, 4, 10)
+	sheet.SetColWidth(5, 5, 10)
+
 	row := sheet.AddRow()
 	row.AddCell().Value = "abiid"
 	row.AddCell().Value = "mainname"
@@ -117,17 +126,17 @@ func DomToExcelWithHightLight(goodsNeedBeNoticed []model.GoodBeNoticed, goods []
 	for _, good := range goods{
 		row = sheet.AddRow()
 		cell1 := row.AddCell()
-		cell1.Value = good.Abiid
+		cell1.Value = good.Good.Abiid
 		cell2 := row.AddCell()
-		cell2.Value = good.MainName
+		cell2.Value = good.Good.MainName
 		cell3 := row.AddCell()
-		cell3.Value = strconv.Itoa(good.Price)
+		cell3.Value = strconv.Itoa(good.Good.Price)
 		cell4 := row.AddCell()
-		cell4.Value = good.Stock
+		cell4.Value = good.Good.Stock
 		cell5 := row.AddCell()
-		cell5.Value = strconv.Itoa(good.IntStock)
+		cell5.Value = strconv.Itoa(good.LastStock)
 		cell6 := row.AddCell()
-		cell6.Value = strconv.Itoa(good.IntStock)
+		cell6.Value = strconv.Itoa(good.Good.IntStock)
 		//row.AddCell().Value = good.Abiid
 		//row.AddCell().Value = good.MainName
 		//row.AddCell().Value = strconv.Itoa(good.Price)
@@ -136,7 +145,7 @@ func DomToExcelWithHightLight(goodsNeedBeNoticed []model.GoodBeNoticed, goods []
 	}
 	err = file.Save(filename)
 	if err != nil {
-		fmt.Println(err)
+		model.Error.Println("保存excel失败", err.Error())
 		return ""
 	}
 	return filename

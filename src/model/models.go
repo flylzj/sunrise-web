@@ -1,24 +1,36 @@
 package model
 
 import (
-	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"io"
+	"log"
+	"os"
 )
 
-var Db *gorm.DB
+
+
+var(
+	Db *gorm.DB
+	Info *log.Logger
+	Error *log.Logger
+)
 
 func init_conf(db *gorm.DB){
-	conf := Conf{IntervalHour:0, IntervalMinute:0,Sender:"",SenderPwd:"",Receiver:""}
+	conf := Conf{IntervalHour:0, IntervalMinute:2,Sender:"",SenderPwd:"",Receiver:"", GoodCountInterval:5}
 	db.Create(&conf)
 }
 
 func init() {
-	var err error
+	errFile, err := os.OpenFile("err.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil{
+		log.Fatalln("打开文件失败", err.Error())
+	}
+	Info = log.New(os.Stdout, "Info:", log.Ldate | log.Ltime | log.Lshortfile)
+	Error = log.New(io.MultiWriter(os.Stdout, errFile), "Error:", log.Ldate | log.Ltime | log.Llongfile)
 	Db, err = gorm.Open("sqlite3", "test.db")
 	if err != nil {
-		fmt.Println(err)
-		panic("连接数据库失败")
+		Error.Fatalln("数据库链接错误")
 	}
 	if !Db.HasTable(&Good{}){
 		Db.CreateTable(&Good{})
@@ -33,6 +45,7 @@ func init() {
 		Db.CreateTable(&Conf{})
 		init_conf(Db)
 	}
+	Db.AutoMigrate(&Good{}, &GoodBeMonitored{}, &GoodHistory{}, &Conf{})
 	return
 }
 
@@ -84,6 +97,7 @@ type Conf struct {
 	Sender			string
 	SenderPwd		string
 	Receiver		string
+	GoodCountInterval	int
 }
 
 func (Conf) TableName()string{
