@@ -59,7 +59,11 @@ func GetToken() string{
 	signature := hex.EncodeToString(cipherStr)
 	data := fmt.Sprintf("{\"appid\": \"%s\", \"appsecret\": \"%s\", \"timestamp\": \"%s\", \"signature\": \"%s\", \"nonce\": \"%s\"}",
 		appid, appsecret, timestamp, strings.ToUpper(signature), nonce)
-	jsonData, _ := GetJsonData(url, "POST", map[string]string{"Content-Type": "application/json"}, data)
+	jsonData, err := GetJsonData(url, "POST", map[string]string{"Content-Type": "application/json"}, data)
+	if err != nil{
+		model.Error.Println("get token error", err.Error())
+		return ""
+	}
 	token, _ := jsonData.Get("data").Get("token").String()
 	return 	token
 }

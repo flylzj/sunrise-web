@@ -28,7 +28,7 @@ func init() {
 	}
 	Info = log.New(os.Stdout, "Info:", log.Ldate | log.Ltime | log.Lshortfile)
 	Error = log.New(io.MultiWriter(os.Stdout, errFile), "Error:", log.Ldate | log.Ltime | log.Llongfile)
-	Db, err = gorm.Open("sqlite3", "test.db")
+	Db, err = gorm.Open("sqlite3", "test3.db")
 	if err != nil {
 		Error.Fatalln("数据库链接错误")
 	}

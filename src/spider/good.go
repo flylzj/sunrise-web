@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 	"util"
-	)
+)
 
 func GetAGood(abiid string) (model.Good, bool){
 	info := model.Good{Abiid:abiid}
@@ -29,7 +29,10 @@ func GetAGood(abiid string) (model.Good, bool){
 func GetGoodPrice(abiid string, token string, info *model.Good){
 	url := fmt.Sprintf("http://srmemberapp.srgow.com/goods/prices/%s", abiid)
 	headers := map[string]string{"Accept": "application/json", "Authorization": "Bearer " + token}
-	data, _ := GetJsonData(url, "GET", headers, "")
+	data, err := GetJsonData(url, "GET", headers, "")
+	if err != nil{
+		return
+	}
 	data = data.Get("data")
 	info.Price, _ = data.Get("price").Int()
 	info.RealPrice, _ = data.Get("realprice").Int()
@@ -40,7 +43,10 @@ func GetGoodPrice(abiid string, token string, info *model.Good){
 func GetGoodInfo(abiid string, token string, info *model.Good){
 	url := fmt.Sprintf("http://b2carticleinfo.lib.cdn.srgow.com/api/v1/Article?languageid=1&abiid=%s", abiid)
 	headers := map[string]string{"Accept": "application/json", "Authorization": "Bearer " + token}
-	data, _ := GetJsonData(url, "GET", headers, "")
+	data, err := GetJsonData(url, "GET", headers, "")
+	if err != nil{
+		return
+	}
 	abiidInt, _ := data.Get("abiid").Int()
     info.Abiid = strconv.Itoa(abiidInt)
 	info.MainName, _ = data.Get("mainname").String()
@@ -51,9 +57,10 @@ func GetGoodInfo(abiid string, token string, info *model.Good){
 	info.CategoryId, _ = data.Get("categorycode").String()
 }
 
-func UpdateGoodInfo(){
+func UpdateGoodInfo() bool{
 	var goodsBeMonitored []model.GoodBeMonitored
 	model.Db.Find(&goodsBeMonitored)
+	errCount := 0
 	for _, goodBeMonitored := range goodsBeMonitored{
 		g, result := GetAGood(goodBeMonitored.Abiid)
 		if result{
@@ -78,13 +85,16 @@ func UpdateGoodInfo(){
 				UpdateTime:int(time.Now().Unix()),
 			})
 			model.Info.Println("更新", good.Abiid, "成功")
+		}else {
+			errCount += 1
 		}
 	}
+	return errCount == len(goodsBeMonitored)
 }
 
 func UpdateGoodInfoWithInterval(){
 	model.Info.Println("第一次爬虫将在", time.Now().Add(time.Second * 60), "开始")
-	time.Sleep(time.Second * 60)
+	time.Sleep(time.Second * 10)
 	for{
 		model.Info.Println("更新任务开始")
 		conf := model.Conf{}
@@ -98,7 +108,12 @@ func UpdateGoodInfoWithInterval(){
 			second = 5
 		}
 		interval := time.Hour * time.Duration(hour) + time.Minute * time.Duration(minute) + time.Second * time.Duration(second)
-		UpdateGoodInfo()
+		hasHttpError := UpdateGoodInfo()
+		if hasHttpError{
+			model.Error.Println("网络或者服务器出现问题，程序即将暂停10分钟, 下次开始时间为", time.Now().Add(time.Minute * 10))
+			time.Sleep(time.Minute * 10)
+			continue
+		}
 		var goods []model.Good
 		model.Db.Find(&goods)
 		util.CreatePath("spider_data")
